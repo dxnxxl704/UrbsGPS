@@ -35,15 +35,19 @@ Informações relevantes para embarque;
 Opções para ida e retorno.
 O usuário escolhe a linha desejada.
 A experiência de embarque torna-se mais rápida e intuitiva.
+
 Responsáveis
+
 Decisões de Produto
 Daniel Biehl Stiwers
 Otto Miguel de Moraes
+
 Aprovação e Validação
 Toda decisão arquitetural, funcional ou de negócio deve ser validada por:
 
 Daniel Biehl Stiwers
 Otto Miguel de Moraes
+
 Arquitetura
 Modelo de Repositório
 Monorepo
@@ -120,6 +124,7 @@ Padronização do ambiente;
 Facilidade de onboarding;
 Redução de problemas de compatibilidade;
 Deploy consistente.
+
 Framework de Desenvolvimento
 XP (Extreme Programming)
 O projeto seguirá os princípios de XP:
@@ -137,7 +142,9 @@ Testes automatizados;
 Integração frequente;
 Revisão constante do código;
 Entregas pequenas e frequentes.
+
 Regras Obrigatórias para Agentes e Desenvolvedores
+
 1. Ler Antes de Alterar
 Antes de implementar qualquer mudança:
 
@@ -791,3 +798,46 @@ Toda alteração estrutural significativa deve:
 Ser documentada.
 Gerar ADR quando necessário.
 Atualizar este CLAUDE.md.
+
+1. Preparar os dados de transporte
+Comece cadastrando pontos, linhas, trajetos, horários e viagens no backend. Uma boa opção é usar o padrão GTFS, comum em dados de transporte público. Ele organiza os dados estáticos; o GTFS-Realtime pode trazer posições dos veículos, previsões de chegada e alertas de serviço.
+
+O PostgreSQL/PostGIS pode armazenar pontos e trajetos geográficos. Antes de escolher o formato definitivo e as fontes de dados, a decisão deve ser validada pelos responsáveis do projeto.
+
+2. GPS da frota e ônibus em tempo real
+O GPS é a fonte de localização; “ônibus em tempo real” é o recurso que usa essa localização para mostrar onde os veículos estão e estimar quando chegarão.
+
+Para isso, é preciso obter posições dos ônibus, por exemplo, de dispositivos instalados na frota ou de uma API da empresa de transporte. O backend recebe essas posições, associa cada veículo à linha ou viagem e publica os dados para o aplicativo. A atualização pode ocorrer em intervalos curtos, sem exigir que o celular consulte o servidor continuamente.
+
+Sem acesso a dados reais da frota, é possível desenvolver com dados simulados, mas eles devem aparecer claramente como demonstração, não como informação real.
+
+3. Planejamento de viagens
+A pessoa informa origem e destino; a API calcula opções de trajeto, incluindo caminhada até os pontos, linhas a embarcar, possíveis transferências e caminhada final. O backend deve fazer os cálculos, enquanto o app apresenta as alternativas.
+
+Uma primeira versão pode usar pontos, trajetos e horários cadastrados. Depois, pode considerar atrasos e posições reais dos ônibus. Critérios como menor duração, menos transferências ou menos caminhada são decisões de produto que precisam ser definidas.
+
+4. Alertas de chegada
+Com as previsões de chegada, o usuário pode pedir um aviso para uma linha ou ponto, como “avise quando o ônibus estiver próximo”. O backend acompanha a condição e envia uma notificação push ao celular.
+
+Para funcionar, será necessário cadastrar a preferência do usuário, integrar um serviço de notificações e definir o que significa “próximo” — uma quantidade em distância. O alerta deve indicar quando a previsão estiver indisponível ou incerta.
+
+5. Rotas acessíveis
+O sistema precisa conhecer características dos pontos e trajetos, como acessibilidade do ponto, presença de rampas ou elevadores e acessibilidade dos veículos. Essas informações podem vir da empresa de transporte, de dados públicos ou de levantamentos próprios.
+
+Com os dados disponíveis, o planejador pode filtrar ou priorizar opções acessíveis. É importante não prometer uma rota acessível quando faltarem dados: nesse caso, o app deve informar que a acessibilidade não foi confirmada.
+
+6. Histórico de deslocamentos e rotas favoritas
+O histórico pode registrar viagens planejadas ou iniciadas, e os favoritos podem guardar pontos, linhas ou trajetos. Para persistir isso entre dispositivos, o backend precisará associar esses dados a uma conta. Se não houver login, dá para começar armazenando-os somente no aparelho, com menos recursos de sincronização.
+
+Como são dados que podem revelar hábitos e deslocamentos, o histórico deve ser opcional, protegido e acompanhado de controles para consultar e apagar os registros. A política de retenção e a necessidade de conta também devem ser aprovadas antes da implementação.
+
+Ordem sugerida
+
+Organizar pontos, linhas, trajetos e horários.
+Criar e validar a API de planejamento básico.
+Integrar uma fonte de GPS e exibir posições reais, se disponível.
+Usar essas posições para estimar chegadas.
+Criar alertas de chegada.
+Acrescentar dados e filtros de acessibilidade.
+Implementar favoritos e histórico, definindo antes como serão tratados conta, privacidade e exclusão.
+Para cada etapa: modelar os dados, implementar as regras e endpoints no backend, documentar com OpenAPI, criar testes e validar no Insomnia. Depois dessa validação, o aplicativo pode consumir a API.
